@@ -1,4 +1,4 @@
-// src/physics/CollisionDetector.js
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { CONFIG } from '../config/GameConfig.js';
 
 export class CollisionDetector {
@@ -48,7 +48,7 @@ export class CollisionDetector {
                 break;
             }
         }
-        // Player projectiles vs asteroids/enemies
+        // Player projectiles vs asteroids/enemies/boss
         for (let i = player.projectilePool.length-1; i >= 0; i--) {
             const bolt = player.projectilePool[i];
             for (const asteroid of entityManager.asteroids) {
@@ -70,30 +70,30 @@ export class CollisionDetector {
                         game.particles.emit(enemy.mesh.position, 0xff3333, 15);
                         game.stats.addKill();
                         game.audio.playExplosion();
-                        // chance drop starbit
                         if (Math.random() < 0.4) entityManager.spawnPickup(enemy.mesh.position.clone(), 'starbit');
                     }
                     break;
                 }
             }
-            if (this.boss && this.boss.alive && bolt.position.distanceTo(this.boss.mesh.position) < 3) {
+            // Boss collision (using entityManager.boss)
+            if (entityManager.boss && entityManager.boss.alive && bolt.position.distanceTo(entityManager.boss.mesh.position) < 3) {
                 game.scene.remove(bolt);
                 player.projectilePool.splice(i,1);
-                if (this.boss.takeDamage(1)) {
-                    game.particles.emit(this.boss.mesh.position, 0xff00ff, 30);
-                    if (!this.boss.alive) {
+                if (entityManager.boss.takeDamage(1)) {
+                    game.particles.emit(entityManager.boss.mesh.position, 0xff00ff, 30);
+                    if (!entityManager.boss.alive) {
                         game.stats.addBossKill();
                         game.audio.playExplosion();
-                        // drop lots of starbits
-                        for (let j=0; j<10; j++) entityManager.spawnPickup(this.boss.mesh.position.clone().add({x:Math.random()*4-2,y:Math.random()*4-2,z:0}), 'starbit');
-                        game.scene.remove(this.boss.mesh);
-                        this.boss = null;
+                        for (let j=0; j<10; j++) entityManager.spawnPickup(entityManager.boss.mesh.position.clone().add(new THREE.Vector3(Math.random()*4-2, Math.random()*4-2, 0)), 'starbit');
+                        game.scene.remove(entityManager.boss.mesh);
+                        entityManager.boss = null;
+                        game.spawner.bossActive = false;
                     }
                 }
                 break;
             }
         }
-        // Pickups
+        // Pickups (magnet effect)
         for (const pickup of entityManager.pickups) {
             if (!pickup.alive) continue;
             const range = (player.activePowerup === 'MAGNET') ? player.magnetRange : CONFIG.STARBIT_MAGNET_RANGE;
@@ -110,4 +110,4 @@ export class CollisionDetector {
             }
         }
     }
-}
+            }
