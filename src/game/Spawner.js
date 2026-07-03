@@ -1,5 +1,7 @@
 // src/game/Spawner.js
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { CONFIG } from '../config/GameConfig.js';
+import { Boss } from '../entities/Boss.js';
 
 export class Spawner {
     constructor(scene, entityManager) {
@@ -52,6 +54,5 @@ export class Spawner {
         boss.spawn(new THREE.Vector3(0, 0, -30), difficulty);
         this.em.boss = boss;
         this.scene.add(boss.mesh);
-        // Boss defeated callback handled in collision
     }
-}
+    }
