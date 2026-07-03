@@ -1,14 +1,87 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID FORGE</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Cosmic Drifter</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="gameCanvas" width="1280" height="720"></canvas>
-    <div id="ui" class="ui-overlay"></div>
-    <script type="module" src="main.js"></script>
+    <div id="game-container"></div>
+
+    <!-- UI Overlays -->
+    <div id="ui-layer">
+        <!-- HUD -->
+        <div id="hud" style="display:none">
+            <div id="hud-distance">0 m</div>
+            <div id="hud-starbits">✦ 0</div>
+            <div id="hud-health">❤️❤️❤️</div>
+            <div id="hud-shield" style="display:none">🛡️</div>
+            <div id="hud-powerup" style="display:none">
+                <span id="powerup-icon"></span>
+                <span id="powerup-timer"></span>
+            </div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="menu-screen" class="screen">
+            <h1>🚀 COSMIC DRIFTER</h1>
+            <button id="btn-play">PLAY</button>
+            <button id="btn-shop">SHOP</button>
+            <button id="btn-settings">SETTINGS</button>
+            <button id="btn-credits">CREDITS</button>
+            <div id="high-score-display">Best: 0 m</div>
+        </div>
+
+        <!-- Shop Screen -->
+        <div id="shop-screen" class="screen" style="display:none">
+            <h2>SHOP</h2>
+            <div id="shop-starbits">✦ 0</div>
+            <div id="shop-upgrades"></div>
+            <button id="btn-shop-back">BACK</button>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen" style="display:none">
+            <h2>SETTINGS</h2>
+            <label>Master Volume</label>
+            <input type="range" id="vol-master" min="0" max="100" value="70">
+            <label>Music Volume</label>
+            <input type="range" id="vol-music" min="0" max="100" value="60">
+            <label>SFX Volume</label>
+            <input type="range" id="vol-sfx" min="0" max="100" value="80">
+            <button id="btn-fullscreen">Toggle Fullscreen</button>
+            <button id="btn-settings-back">BACK</button>
+        </div>
+
+        <!-- Pause Screen -->
+        <div id="pause-screen" class="screen" style="display:none">
+            <h2>PAUSED</h2>
+            <button id="btn-resume">RESUME</button>
+            <button id="btn-restart">RESTART</button>
+            <button id="btn-quit">QUIT TO MENU</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="screen" style="display:none">
+            <h2>GAME OVER</h2>
+            <p id="go-distance">Distance: 0 m</p>
+            <p id="go-starbits">StarBits: 0</p>
+            <button id="btn-retry">RETRY</button>
+            <button id="btn-go-shop">SHOP</button>
+            <button id="btn-go-menu">MENU</button>
+        </div>
+
+        <!-- Credits Screen -->
+        <div id="credits-screen" class="screen" style="display:none">
+            <h2>CREDITS</h2>
+            <p>Built with Three.js & Web Audio</p>
+            <p>Procedural Space Survival</p>
+            <button id="btn-credits-back">BACK</button>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>
