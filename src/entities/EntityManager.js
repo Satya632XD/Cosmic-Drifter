@@ -17,9 +17,8 @@ export class EntityManager {
         this.pickups = [];
         this.enemyBullets = [];
         this.asteroidPool = [];
-        this.enemyPool = [];
-        this.pickupPool = [];
-        // Pre-create meshes for pooling
+        this.enemyPool = [];      // <-- Added
+        this.pickupPool = [];     // <-- Added
         this.asteroidGeo = createAsteroidMesh();
         this.enemyMeshProto = createEnemyMesh();
     }
