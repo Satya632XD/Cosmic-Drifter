@@ -2,6 +2,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 export class Boss {
+    // ... rest unchanged, just ensure import at top
     constructor(difficulty) {
         this.mesh = this.createMesh();
         this.alive = false;
@@ -9,7 +10,6 @@ export class Boss {
         this.maxHealth = 0;
         this.phase = 1;
         this.shootTimer = 0;
-        this.spawned = false;
     }
 
     createMesh() {
@@ -19,7 +19,6 @@ export class Boss {
             new THREE.MeshStandardMaterial({ color: 0xaa00ff, emissive: new THREE.Color(0x330066), roughness: 0.2, metalness: 0.9 })
         );
         group.add(core);
-        // Rings
         const ringGeo = new THREE.TorusGeometry(2.2, 0.1, 16, 32);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xff00ff });
         const ring1 = new THREE.Mesh(ringGeo, ringMat);
@@ -43,15 +42,12 @@ export class Boss {
 
     update(delta, playerPos, game) {
         if (!this.alive) return;
-        // Move slowly forward
         this.mesh.position.z += 8 * delta;
         this.mesh.rotation.y += 0.5 * delta;
-        // Phases
         if (this.phase === 1) {
             this.shootTimer -= delta;
             if (this.shootTimer <= 0) {
                 this.shootTimer = 0.2;
-                // Fire rotating beams
                 const angle = Date.now() * 0.003;
                 for (let i = 0; i < 8; i++) {
                     const a = angle + (i * Math.PI*2/8);
@@ -79,4 +75,4 @@ export class Boss {
         }
         return false;
     }
-}
+                                            }
