@@ -1,8 +1,6 @@
-// src/entities/Boss.js
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 export class Boss {
-    // ... rest unchanged, just ensure import at top
     constructor(difficulty) {
         this.mesh = this.createMesh();
         this.alive = false;
@@ -75,4 +73,4 @@ export class Boss {
         }
         return false;
     }
-                                            }
+}
