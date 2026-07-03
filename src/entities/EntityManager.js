@@ -1,4 +1,3 @@
-// src/entities/EntityManager.js
 import { CONFIG } from '../config/GameConfig.js';
 import { Player } from './Player.js';
 import { Asteroid, createAsteroidMesh } from './Asteroid.js';
@@ -17,8 +16,8 @@ export class EntityManager {
         this.pickups = [];
         this.enemyBullets = [];
         this.asteroidPool = [];
-        this.enemyPool = [];      // <-- Added
-        this.pickupPool = [];     // <-- Added
+        this.enemyPool = [];      // essential for pooling
+        this.pickupPool = [];     // essential for pooling
         this.asteroidGeo = createAsteroidMesh();
         this.enemyMeshProto = createEnemyMesh();
     }
@@ -107,7 +106,6 @@ export class EntityManager {
     }
 
     updateAll(delta, player, game) {
-        // Asteroids
         for (let i = this.asteroids.length-1; i >= 0; i--) {
             const a = this.asteroids[i];
             a.update(delta);
@@ -115,7 +113,6 @@ export class EntityManager {
                 this.removeAsteroid(a);
             }
         }
-        // Enemies
         for (let i = this.enemies.length-1; i >= 0; i--) {
             const e = this.enemies[i];
             e.update(delta, player.mesh.position, game);
@@ -123,7 +120,6 @@ export class EntityManager {
                 this.removeEnemy(e);
             }
         }
-        // Pickups
         for (let i = this.pickups.length-1; i >= 0; i--) {
             const p = this.pickups[i];
             p.update(delta);
@@ -131,7 +127,6 @@ export class EntityManager {
                 this.removePickup(p);
             }
         }
-        // Boss
         if (this.boss && this.boss.alive) {
             this.boss.update(delta, player.mesh.position, game);
             if (this.boss.mesh.position.z > 20) {
@@ -139,7 +134,6 @@ export class EntityManager {
                 this.boss = null;
             }
         }
-        // Enemy bullets
         for (let i = this.enemyBullets.length-1; i >= 0; i--) {
             const b = this.enemyBullets[i];
             b.position.add(b.userData.velocity.clone().multiplyScalar(delta));
