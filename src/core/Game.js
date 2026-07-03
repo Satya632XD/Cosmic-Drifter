@@ -1,4 +1,3 @@
-// src/core/Game.js
 import { CONFIG } from '../config/GameConfig.js';
 import { InputManager } from '../input/InputManager.js';
 import { Renderer } from '../graphics/Renderer.js';
@@ -17,7 +16,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
 export class Game {
     constructor() {
-        this.state = 'menu'; // menu, playing, paused, gameover, shop, settings, credits
+        this.state = 'menu';
         this.clock = new THREE.Clock();
         this.deltaTime = 0;
         this.timeScale = 1;
@@ -26,13 +25,11 @@ export class Game {
     }
 
     async init() {
-        // Renderer
         this.renderer = new Renderer();
         this.scene = this.renderer.scene;
         this.camera = this.renderer.camera;
         this.bloomPass = this.renderer.bloomPass;
 
-        // Managers
         this.input = new InputManager(this.renderer.domElement);
         this.audio = new AudioManager();
         this.effects = new EffectsManager(this.camera);
@@ -46,13 +43,11 @@ export class Game {
         this.ui = new UIManager(this);
         this.screens = new Screens(this);
 
-        // Apply saved audio settings
         this.audio.setMasterVolume(this.progression.getSetting('masterVol', 70) / 100);
         this.audio.setMusicVolume(this.progression.getSetting('musicVol', 60) / 100);
         this.audio.setSFXVolume(this.progression.getSetting('sfxVol', 80) / 100);
         this.audio.startMusic();
 
-        // Start loop
         this.lastTime = performance.now();
         this.animate();
         this.screens.showMenu();
@@ -71,9 +66,10 @@ export class Game {
         this.difficulty.reset();
         this.particles.clear();
         this.effects.reset();
+        this.camera.position.set(0, 2, -8);
+        this.camera.lookAt(0, 0, 20);
         this.ui.showHUD();
         this.screens.hideAll();
-        this.audio.playShoot(); // just to init context
     }
 
     pauseGame() {
@@ -112,29 +108,30 @@ export class Game {
         this.frameCount++;
 
         if (this.state === 'playing') {
-            // Input movement
             const move = this.input.getMovement();
             this.player.update(delta, move, this.input.isShooting(), this);
-            this.distance += this.player.speed * delta * 10; // approximate meters
+            
+            // Fixed distance scaling (based on asteroid speed, not player speed)
+            this.distance += CONFIG.ASTEROID_SPEED * delta;
             this.stats.distance = Math.floor(this.distance);
 
             this.difficulty.update(this.distance);
             this.spawner.update(delta, this.difficulty, this.distance);
 
-            // Update all entities
             this.entityManager.updateAll(delta, this.player, this);
 
-            // Collisions
             this.collision.check(this.player, this.entityManager, this);
 
-            // Effects update
+            // Camera follow (smooth lerp)
+            const targetX = this.player.mesh.position.x * 0.6;
+            const targetY = this.player.mesh.position.y * 0.5 + 2;
+            this.camera.position.lerp(new THREE.Vector3(targetX, targetY, -8), 2 * delta);
+            this.camera.lookAt(this.player.mesh.position.x * 0.3, this.player.mesh.position.y * 0.3, 20);
+
             this.effects.update(delta);
             this.particles.update(delta);
-
-            // UI update
             this.ui.updateHUD(this.player, this.stats);
 
-            // Boss check
             if (this.distance > CONFIG.BOSS_DISTANCE && !this.spawner.bossActive) {
                 this.spawner.spawnBoss(this.difficulty);
             }
