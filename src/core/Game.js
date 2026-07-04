@@ -1,3 +1,4 @@
+// src/core/Game.js
 import { CONFIG } from '../config/GameConfig.js';
 import { InputManager } from '../input/InputManager.js';
 import { Renderer } from '../graphics/Renderer.js';
@@ -18,9 +19,7 @@ export class Game {
     constructor() {
         this.state = 'menu';
         this.clock = new THREE.Clock();
-        this.deltaTime = 0;
         this.timeScale = 1;
-        this.frameCount = 0;
         this.distance = 0;
     }
 
@@ -28,7 +27,6 @@ export class Game {
         this.renderer = new Renderer();
         this.scene = this.renderer.scene;
         this.camera = this.renderer.camera;
-        this.bloomPass = this.renderer.bloomPass;
 
         this.input = new InputManager(this.renderer.domElement);
         this.audio = new AudioManager();
@@ -66,23 +64,10 @@ export class Game {
         this.difficulty.reset();
         this.particles.clear();
         this.effects.reset();
-        this.camera.position.set(0, 2, -8);
-        this.camera.lookAt(0, 0, 20);
+        // Camera initial position
+        this.camera.position.set(0, 2, -10);
+        this.camera.lookAt(0, 0, 30);
         this.ui.showHUD();
-        this.screens.hideAll();
-    }
-
-    pauseGame() {
-        if (this.state !== 'playing') return;
-        this.state = 'paused';
-        this.timeScale = 0;
-        this.screens.showPause();
-    }
-
-    resumeGame() {
-        if (this.state !== 'paused') return;
-        this.state = 'playing';
-        this.timeScale = 1;
         this.screens.hideAll();
     }
 
@@ -103,35 +88,53 @@ export class Game {
     }
 
     update() {
-        const delta = Math.min(this.clock.getDelta(), 0.05) * this.timeScale;
-        this.deltaTime = delta;
-        this.frameCount++;
+        const rawDelta = this.clock.getDelta();
+        const delta = Math.min(rawDelta, 0.05) * this.timeScale;
 
         if (this.state === 'playing') {
             const move = this.input.getMovement();
             this.player.update(delta, move, this.input.isShooting(), this);
-            
-            // Fixed distance scaling (based on asteroid speed, not player speed)
+
+            // Distance increases proportionally to forward speed
             this.distance += CONFIG.ASTEROID_SPEED * delta;
             this.stats.distance = Math.floor(this.distance);
 
             this.difficulty.update(this.distance);
             this.spawner.update(delta, this.difficulty, this.distance);
-
             this.entityManager.updateAll(delta, this.player, this);
-
             this.collision.check(this.player, this.entityManager, this);
 
-            // Camera follow (smooth lerp)
-            const targetX = this.player.mesh.position.x * 0.6;
-            const targetY = this.player.mesh.position.y * 0.5 + 2;
-            this.camera.position.lerp(new THREE.Vector3(targetX, targetY, -8), 2 * delta);
-            this.camera.lookAt(this.player.mesh.position.x * 0.3, this.player.mesh.position.y * 0.3, 20);
+            // --- NEW CAMERA LOGIC ---
+            // Camera stays at a fixed world offset behind and slightly above the player,
+            // but lags horizontally for smoothness.
+            const playerPos = this.player.mesh.position;
+            const targetCamX = playerPos.x * 0.4;   // lateral lag factor
+            const targetCamY = playerPos.y * 0.3 + 3.0; // height offset
+            const targetCamZ = playerPos.z - 10;        // behind player
+
+            // Smooth interpolation
+            const lerpFactor = 1 - Math.exp(-4 * delta); // smooth damping
+            this.camera.position.x += (targetCamX - this.camera.position.x) * lerpFactor;
+            this.camera.position.y += (targetCamY - this.camera.position.y) * lerpFactor;
+            this.camera.position.z += (targetCamZ - this.camera.position.z) * lerpFactor;
+
+            // Look at a point ahead of the player
+            const lookAtPoint = new THREE.Vector3(
+                playerPos.x * 0.2,
+                playerPos.y * 0.2 + 0.5,
+                playerPos.z + 30
+            );
+            this.camera.lookAt(lookAtPoint);
+
+            // Slight FOV change when boosting (speed powerup)
+            this.camera.fov = 70 + (this.player.activePowerup === 'SPEED' ? 5 : 0);
+            this.camera.updateProjectionMatrix();
 
             this.effects.update(delta);
             this.particles.update(delta);
             this.ui.updateHUD(this.player, this.stats);
 
+            // Boss spawn check
             if (this.distance > CONFIG.BOSS_DISTANCE && !this.spawner.bossActive) {
                 this.spawner.spawnBoss(this.difficulty);
             }
@@ -143,7 +146,7 @@ export class Game {
     animate() {
         requestAnimationFrame(() => this.animate());
         this.update();
-        this.renderer.render(this.scene, this.camera, this.bloomPass);
+        this.renderer.render(this.scene, this.camera, this.renderer.bloomPass);
     }
 
     onResize() {
