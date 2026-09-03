@@ -25,6 +25,11 @@ export class AudioManager {
     setMusicVolume(v) { if (this.musicGain) this.musicGain.gain.value = v; }
     setSFXVolume(v) { if (this.sfxGain) this.sfxGain.gain.value = v; }
 
+    resume() {
+        this.ensureContext();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+    }
+
     playTone(freq, duration, type = 'sine', gain = 0.3, dest = this.sfxGain) {
         this.ensureContext();
         const osc = this.ctx.createOscillator();

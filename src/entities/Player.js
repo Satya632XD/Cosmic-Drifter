@@ -3,10 +3,12 @@ import { CONFIG, POWERUP_TYPES } from '../config/GameConfig.js';
 
 export class Player {
     constructor(startHp, hasShield) {
+        this.originalMaterials = [];
         this.mesh = this.createMesh();
         this.speed = CONFIG.PLAYER_SPEED;
         this.baseSpeed = CONFIG.PLAYER_SPEED;
         this.fireRate = CONFIG.PLAYER_FIRE_RATE;
+        this.baseFireRate = CONFIG.PLAYER_FIRE_RATE;
         this.fireCooldown = 0;
         this.health = startHp;
         this.maxHealth = startHp;
@@ -18,9 +20,10 @@ export class Player {
         this.activePowerup = null;
         this.powerupTimer = 0;
         this.projectilePool = [];
-        this.magnetRange = CONFIG.STARBIT_MAGNET_RANGE;
+        this.baseMagnetRange = CONFIG.STARBIT_MAGNET_RANGE;
+        this.magnetRange = this.baseMagnetRange;
+        this.starBitMultiplier = 1;
         this.mesh.position.set(0, 0, 0);
-        this.originalMaterials = [];
     }
 
     createMesh() {
@@ -107,7 +110,18 @@ export class Player {
     }
 
     shoot(game) {
-        if (this.activePowerup === 'LASER') return;
+        if (this.activePowerup === 'LASER') {
+            const bolt = new THREE.Mesh(
+                new THREE.BoxGeometry(0.3, 0.3, 2.4),
+                new THREE.MeshBasicMaterial({ color: 0xff00ff })
+            );
+            bolt.position.copy(this.mesh.position);
+            bolt.position.z -= 2;
+            game.scene.add(bolt);
+            this.projectilePool.push(bolt);
+            game.audio.playShoot();
+            return;
+        }
         const spread = (this.activePowerup === 'SPREAD') ? 0.3 : 0;
         const angles = spread ? [-0.2, 0, 0.2, -0.4, 0.4] : [0];
         for (const a of angles) {
@@ -130,15 +144,15 @@ export class Player {
         this.powerupTimer = CONFIG.POWERUP_DURATION;
         if (type === 'SPEED') this.speed = this.baseSpeed * 1.5;
         if (type === 'SPREAD') this.fireRate = this.baseFireRate * 1.3;
-        if (type === 'LASER') this.fireRate = 0;
+        if (type === 'LASER') this.fireRate = this.baseFireRate * 0.5;
         if (type === 'SHIELD' && !this.shieldActive) { this.shieldActive = true; this.addShieldVisual(); }
-        if (type === 'MAGNET') this.magnetRange = CONFIG.STARBIT_MAGNET_RANGE * 2;
+        if (type === 'MAGNET') this.magnetRange = this.baseMagnetRange * 2;
     }
 
     deactivatePowerup() {
         if (this.activePowerup === 'SPEED') this.speed = this.baseSpeed;
         if (this.activePowerup === 'SPREAD') this.fireRate = this.baseFireRate;
-        if (this.activePowerup === 'MAGNET') this.magnetRange = CONFIG.STARBIT_MAGNET_RANGE;
+        if (this.activePowerup === 'MAGNET') this.magnetRange = this.baseMagnetRange;
         this.activePowerup = null;
         this.powerupTimer = 0;
     }

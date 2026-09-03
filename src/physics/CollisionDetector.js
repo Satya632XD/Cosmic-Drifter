@@ -1,5 +1,4 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { CONFIG } from '../config/GameConfig.js';
 
 export class CollisionDetector {
     check(player, entityManager, game) {
@@ -51,6 +50,7 @@ export class CollisionDetector {
         // Player projectiles vs asteroids/enemies/boss
         for (let i = player.projectilePool.length-1; i >= 0; i--) {
             const bolt = player.projectilePool[i];
+            let consumed = false;
             for (const asteroid of entityManager.asteroids) {
                 if (bolt.position.distanceTo(asteroid.mesh.position) < 1.2) {
                     game.scene.remove(bolt);
@@ -58,9 +58,11 @@ export class CollisionDetector {
                     game.particles.emit(asteroid.mesh.position, 0xaaaaaa, 10);
                     entityManager.removeAsteroid(asteroid);
                     game.stats.addKill();
+                    consumed = true;
                     break;
                 }
             }
+            if (consumed) continue;
             for (const enemy of entityManager.enemies) {
                 if (!enemy.alive) continue;
                 if (bolt.position.distanceTo(enemy.mesh.position) < 1.1) {
@@ -72,9 +74,11 @@ export class CollisionDetector {
                         game.audio.playExplosion();
                         if (Math.random() < 0.4) entityManager.spawnPickup(enemy.mesh.position.clone(), 'starbit');
                     }
+                    consumed = true;
                     break;
                 }
             }
+            if (consumed) continue;
             // Boss collision (using entityManager.boss)
             if (entityManager.boss && entityManager.boss.alive && bolt.position.distanceTo(entityManager.boss.mesh.position) < 3) {
                 game.scene.remove(bolt);
@@ -94,13 +98,15 @@ export class CollisionDetector {
             }
         }
         // Pickups (magnet effect)
-        for (const pickup of entityManager.pickups) {
+        for (let i = entityManager.pickups.length - 1; i >= 0; i--) {
+            const pickup = entityManager.pickups[i];
             if (!pickup.alive) continue;
-            const range = (player.activePowerup === 'MAGNET') ? player.magnetRange : CONFIG.STARBIT_MAGNET_RANGE;
+            const range = player.magnetRange;
             const dist = pPos.distanceTo(pickup.mesh.position);
             if (dist < 1.0 + range) {
                 if (pickup.type === 'starbit') {
                     game.stats.collectStarBit(1);
+                    if (Math.random() < player.starBitMultiplier - 1) game.stats.collectStarBit(1);
                     game.audio.playCollect();
                 } else {
                     player.activatePowerup(pickup.type);

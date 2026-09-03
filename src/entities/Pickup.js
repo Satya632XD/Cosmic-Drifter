@@ -36,4 +36,15 @@ export class Pickup {
             if (child !== this.mesh.children[0]) continue; // motes rotate around
         }
     }
+
+    reset(position, type) {
+        this.type = type;
+        this.mesh.position.copy(position);
+        this.mesh.visible = true;
+        this.alive = true;
+        const material = this.mesh.children[0].material;
+        const color = POWERUP_TYPES[type]?.color || 0xffffff;
+        material.color.setHex(color);
+        material.emissive.setHex(color).multiplyScalar(0.5);
+    }
 }

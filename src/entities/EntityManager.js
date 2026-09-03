@@ -48,6 +48,7 @@ export class EntityManager {
         if (this.asteroidPool.length > 0) {
             asteroid = this.asteroidPool.pop();
             asteroid.reset(position, speed);
+            this.scene.add(asteroid.mesh);
         } else {
             const mesh = createAsteroidMesh(0.8 + Math.random() * 1.2);
             this.scene.add(mesh);
@@ -62,6 +63,7 @@ export class EntityManager {
         if (this.enemyPool.length > 0) {
             enemy = this.enemyPool.pop();
             enemy.reset(position, type);
+            this.scene.add(enemy.mesh);
         } else {
             const mesh = createEnemyMesh();
             this.scene.add(mesh);
@@ -75,15 +77,13 @@ export class EntityManager {
         let pickup;
         if (this.pickupPool.length > 0) {
             pickup = this.pickupPool.pop();
-            pickup.mesh.position.copy(position);
-            pickup.type = type;
-            pickup.alive = true;
+            pickup.reset(position, type);
+            this.scene.add(pickup.mesh);
         } else {
             pickup = new Pickup(type);
             this.scene.add(pickup.mesh);
         }
-        pickup.mesh.position.copy(position);
-        pickup.alive = true;
+        pickup.reset(position, type);
         this.pickups.push(pickup);
     }
 
