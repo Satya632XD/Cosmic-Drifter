@@ -21,6 +21,7 @@ export class Game {
         this.clock = new THREE.Clock();
         this.timeScale = 1;
         this.distance = 0;
+        this.cameraLookTarget = new THREE.Vector3();
     }
 
     async init() {
@@ -74,8 +75,9 @@ export class Game {
         this.particles.clear();
         this.effects.reset();
         // Camera initial position
-        this.camera.position.set(0, 2, -10);
-        this.camera.lookAt(0, 0, 30);
+        this.camera.position.set(0, 3.6, -10.5);
+        this.cameraLookTarget.set(0, 0.35, 16);
+        this.camera.lookAt(this.cameraLookTarget);
         this.ui.showHUD();
         this.screens.hideAll();
     }
@@ -127,30 +129,30 @@ export class Game {
             this.entityManager.updateAll(delta, this.player, this);
             this.collision.check(this.player, this.entityManager, this);
 
-            // --- NEW CAMERA LOGIC ---
-            // Camera stays at a fixed world offset behind and slightly above the player,
-            // but lags horizontally for smoothness.
+            // Responsive chase camera: it stays behind the craft, follows its lateral
+            // movement, and looks slightly ahead so the route remains readable.
             const playerPos = this.player.mesh.position;
-            const targetCamX = playerPos.x * 0.4;   // lateral lag factor
-            const targetCamY = playerPos.y * 0.3 + 3.0; // height offset
-            const targetCamZ = playerPos.z - 10;        // behind player
+            const targetCamX = playerPos.x * 0.82;
+            const targetCamY = playerPos.y * 0.58 + 3.6;
+            const targetCamZ = playerPos.z - 10.5;
 
-            // Smooth interpolation
-            const lerpFactor = 1 - Math.exp(-4 * delta); // smooth damping
+            // A short, damped delay gives movement weight without leaving the ship behind.
+            const lerpFactor = 1 - Math.exp(-7 * delta);
             this.camera.position.x += (targetCamX - this.camera.position.x) * lerpFactor;
             this.camera.position.y += (targetCamY - this.camera.position.y) * lerpFactor;
             this.camera.position.z += (targetCamZ - this.camera.position.z) * lerpFactor;
 
-            // Look at a point ahead of the player
-            const lookAtPoint = new THREE.Vector3(
-                playerPos.x * 0.2,
-                playerPos.y * 0.2 + 0.5,
-                playerPos.z + 30
-            );
-            this.camera.lookAt(lookAtPoint);
+            const targetLookX = playerPos.x * 0.58;
+            const targetLookY = playerPos.y * 0.42 + 0.4;
+            const targetLookZ = playerPos.z + 16;
+            const lookLerp = 1 - Math.exp(-9 * delta);
+            this.cameraLookTarget.x += (targetLookX - this.cameraLookTarget.x) * lookLerp;
+            this.cameraLookTarget.y += (targetLookY - this.cameraLookTarget.y) * lookLerp;
+            this.cameraLookTarget.z += (targetLookZ - this.cameraLookTarget.z) * lookLerp;
+            this.camera.lookAt(this.cameraLookTarget);
 
             // Slight FOV change when boosting (speed powerup)
-            this.camera.fov = 70 + (this.player.activePowerup === 'SPEED' ? 5 : 0);
+            this.camera.fov = 64 + (this.player.activePowerup === 'SPEED' ? 5 : 0);
             this.camera.updateProjectionMatrix();
 
             this.effects.update(delta);
