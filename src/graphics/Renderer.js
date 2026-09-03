@@ -6,11 +6,14 @@ export class Renderer {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.25;
         document.getElementById('game-container').appendChild(this.renderer.domElement);
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x000011);
-        this.scene.fog = new THREE.FogExp2(0x000011, 0.00015);
+        this.scene.background = new THREE.Color(0x020612);
+        this.scene.fog = new THREE.FogExp2(0x020612, 0.009);
 
         this.camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.5, 200);
         this.camera.position.set(0, 2, -8);
@@ -18,13 +21,17 @@ export class Renderer {
 
         // Starfield
         this.addStarfield();
+        this.addNebulae();
 
         // Lighting
-        const ambient = new THREE.AmbientLight(0x224466);
+        const ambient = new THREE.HemisphereLight(0x6eaee8, 0x07101f, 1.25);
         this.scene.add(ambient);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
-        dirLight.position.set(0, 10, 10);
+        const dirLight = new THREE.DirectionalLight(0xc8e6ff, 1.8);
+        dirLight.position.set(-6, 8, -4);
         this.scene.add(dirLight);
+        const rimLight = new THREE.DirectionalLight(0x377cff, 1.3);
+        rimLight.position.set(5, -2, 8);
+        this.scene.add(rimLight);
 
         // Bloom setup
         this.bloomPass = new BloomPass(this.renderer);
@@ -32,7 +39,7 @@ export class Renderer {
 
     addStarfield() {
         const geom = new THREE.BufferGeometry();
-        const count = 800;
+        const count = 1500;
         const positions = new Float32Array(count * 3);
         for (let i = 0; i < count * 3; i += 3) {
             positions[i] = (Math.random() - 0.5) * 80;
@@ -40,10 +47,42 @@ export class Renderer {
             positions[i+2] = Math.random() * 100 - 10;
         }
         geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, blending: THREE.AdditiveBlending });
+        const mat = new THREE.PointsMaterial({ color: 0xbddcff, size: 0.11, sizeAttenuation: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
         const stars = new THREE.Points(geom, mat);
         this.scene.add(stars);
         this.stars = stars;
+
+        const brightStars = new THREE.BufferGeometry();
+        const brightPositions = new Float32Array(180 * 3);
+        for (let i = 0; i < brightPositions.length; i += 3) {
+            brightPositions[i] = (Math.random() - 0.5) * 72;
+            brightPositions[i + 1] = (Math.random() - 0.5) * 34;
+            brightPositions[i + 2] = Math.random() * 95;
+        }
+        brightStars.setAttribute('position', new THREE.BufferAttribute(brightPositions, 3));
+        this.scene.add(new THREE.Points(brightStars, new THREE.PointsMaterial({ color: 0xffffff, size: 0.28, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })));
+    }
+
+    addNebulae() {
+        const createNebula = (color, position, scale) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 256;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(0.28, color);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 256, 256);
+            const texture = new THREE.CanvasTexture(canvas);
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false }));
+            sprite.position.copy(position);
+            sprite.scale.set(scale, scale * 0.62, 1);
+            this.scene.add(sprite);
+        };
+        createNebula('rgba(37, 82, 215, 0.65)', new THREE.Vector3(-16, 4, 48), 30);
+        createNebula('rgba(135, 35, 205, 0.52)', new THREE.Vector3(19, -6, 63), 25);
+        createNebula('rgba(18, 165, 205, 0.36)', new THREE.Vector3(3, 10, 84), 35);
     }
 
     render(scene, camera, bloomPass) {
@@ -157,15 +196,18 @@ class BloomPass {
         // Downsample and blur horizontal
         this.blurMaterialH.uniforms.tDiffuse.value = this.renderTargetA.texture;
         this.renderer.setRenderTarget(this.blurTargetA);
-        this.renderer.render(this.quad, this.camera, this.blurMaterialH);
+        this.quad.material = this.blurMaterialH;
+        this.renderer.render(this.scene, this.camera);
         // Blur vertical
         this.blurMaterialV.uniforms.tDiffuse.value = this.blurTargetA.texture;
         this.renderer.setRenderTarget(this.blurTargetB);
-        this.renderer.render(this.quad, this.camera, this.blurMaterialV);
+        this.quad.material = this.blurMaterialV;
+        this.renderer.render(this.scene, this.camera);
         // Composite
         this.finalMaterial.uniforms.baseTexture.value = this.renderTargetA.texture;
         this.finalMaterial.uniforms.bloomTexture.value = this.blurTargetB.texture;
         this.renderer.setRenderTarget(null);
+        this.quad.material = this.finalMaterial;
         this.renderer.render(this.quad, this.camera, this.finalMaterial);
     }
 }
