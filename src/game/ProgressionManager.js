@@ -37,6 +37,7 @@ export class ProgressionManager {
     }
 
     getStarbits() { return this.data.starBits; }
+    getHighScore() { return this.data.highScore; }
     addStarbits(amount) { this.data.starBits += amount; this.save(); }
     spendStarbits(amount) { if (this.data.starBits >= amount) { this.data.starBits -= amount; this.save(); return true; } return false; }
 

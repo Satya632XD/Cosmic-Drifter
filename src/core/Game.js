@@ -1,5 +1,5 @@
 // src/core/Game.js
-import { CONFIG } from '../config/GameConfig.js';
+import { CONFIG, UPGRADES } from '../config/GameConfig.js';
 import { InputManager } from '../input/InputManager.js';
 import { Renderer } from '../graphics/Renderer.js';
 import { EffectsManager } from '../graphics/EffectsManager.js';
@@ -41,11 +41,10 @@ export class Game {
         this.ui = new UIManager(this);
         this.screens = new Screens(this);
 
+        this.audio.startMusic();
         this.audio.setMasterVolume(this.progression.getSetting('masterVol', 70) / 100);
         this.audio.setMusicVolume(this.progression.getSetting('musicVol', 60) / 100);
         this.audio.setSFXVolume(this.progression.getSetting('sfxVol', 80) / 100);
-        this.audio.startMusic();
-
         this.lastTime = performance.now();
         this.animate();
         this.screens.showMenu();
@@ -53,13 +52,23 @@ export class Game {
     }
 
     startGame() {
+        this.audio.resume();
         this.state = 'playing';
         this.timeScale = 1;
         this.distance = 0;
         this.stats.reset();
         this.entityManager.resetAll();
-        this.player = this.entityManager.createPlayer(this.progression.getUpgradeLevel('hull'));
+        const hullLevel = this.progression.getUpgradeLevel('hull');
+        this.player = this.entityManager.createPlayer(CONFIG.START_HEALTH + UPGRADES.hull.effect(hullLevel));
         this.player.shieldActive = this.progression.getUpgradeLevel('shield') > 0;
+        if (this.player.shieldActive) this.player.addShieldVisual();
+        const engineMultiplier = UPGRADES.engine.effect(this.progression.getUpgradeLevel('engine'));
+        this.player.speed *= engineMultiplier;
+        this.player.baseSpeed *= engineMultiplier;
+        const magnetMultiplier = UPGRADES.magnet.effect(this.progression.getUpgradeLevel('magnet'));
+        this.player.baseMagnetRange *= magnetMultiplier;
+        this.player.magnetRange = this.player.baseMagnetRange;
+        this.player.starBitMultiplier = UPGRADES.lucky.effect(this.progression.getUpgradeLevel('lucky'));
         this.spawner.reset();
         this.difficulty.reset();
         this.particles.clear();
@@ -85,6 +94,20 @@ export class Game {
         this.timeScale = 1;
         this.screens.showMenu();
         this.ui.hideHUD();
+    }
+
+    pauseGame() {
+        if (this.state !== 'playing') return;
+        this.state = 'paused';
+        this.timeScale = 0;
+        this.screens.showPause();
+    }
+
+    resumeGame() {
+        if (this.state !== 'paused') return;
+        this.state = 'playing';
+        this.timeScale = 1;
+        this.screens.hideAll();
     }
 
     update() {

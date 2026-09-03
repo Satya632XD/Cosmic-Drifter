@@ -1,6 +1,5 @@
 // src/ui/Screens.js
-import { CONFIG, UPGRADES } from '../config/GameConfig.js';
-import { ProgressionManager } from '../game/ProgressionManager.js';
+import { UPGRADES } from '../config/GameConfig.js';
 
 export class Screens {
     constructor(game) {
@@ -43,13 +42,22 @@ export class Screens {
         document.getElementById('vol-master').value = this.progression.getSetting('masterVol', 70);
         document.getElementById('vol-music').value = this.progression.getSetting('musicVol', 60);
         document.getElementById('vol-sfx').value = this.progression.getSetting('sfxVol', 80);
+        window.addEventListener('keydown', event => {
+            if (event.code !== 'Escape' || event.repeat) return;
+            if (this.game.state === 'playing') this.game.pauseGame();
+            else if (this.game.state === 'paused') this.game.resumeGame();
+        });
     }
 
-    showMenu() { this.hideAll(); document.getElementById('menu-screen').style.display = 'block'; }
+    showMenu() {
+        this.hideAll();
+        document.getElementById('high-score-display').textContent = `Best: ${this.progression.getHighScore()} m`;
+        document.getElementById('menu-screen').style.display = 'block';
+    }
     showShop() { this.hideAll(); document.getElementById('shop-screen').style.display = 'block'; this.renderShop(); }
     showSettings() { this.hideAll(); document.getElementById('settings-screen').style.display = 'block'; }
     showCredits() { this.hideAll(); document.getElementById('credits-screen').style.display = 'block'; }
-    showPause() { document.getElementById('pause-screen').style.display = 'block'; }
+    showPause() { this.hideAll(); document.getElementById('pause-screen').style.display = 'block'; }
     showGameOver(dist, bits) {
         document.getElementById('go-distance').textContent = `Distance: ${Math.floor(dist)} m`;
         document.getElementById('go-starbits').textContent = `StarBits: ${bits}`;
